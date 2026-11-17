@@ -1,7 +1,0 @@
-{
-  "what": "The SARB web API's reply for ZARONIA (series MMRD855A), saved byte for byte. The notebook uses it only if the live API cannot be reached.",
-  "series": "MMRD855A",
-  "request_url": "https://custom.resbank.co.za/SarbWebApi/WebIndicators/Shared/GetTimeseriesObservations/MMRD855A/2025-05-01/2026-11-13",
-  "retrieved_at_utc": "2026-11-16T19:38:21Z",
-  "sha256": "87883e12fd591c175b3ad14685ba6f8686c0e4b2b2042d7324afdd84f4523e25"
-}
