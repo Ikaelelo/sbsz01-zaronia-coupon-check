@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -r requirements.txt nbconvert ipykernel
+      - run: pip install -r requirements.txt nbconvert==7.16.4 ipykernel==6.29.5
       - run: jupyter nbconvert --to notebook --execute SBSZ01_Colab.ipynb --output executed.ipynb --ExecutePreprocessor.timeout=300
       - uses: actions/upload-artifact@v4
         with:
