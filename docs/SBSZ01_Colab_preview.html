@@ -7838,12 +7838,12 @@ a.anchor-link {
 </tr>
 <tr>
 <td><code>data/sarb_MMRD855A_cache.json</code></td>
-<td>The SARB API's reply, saved byte for byte, used only if the live API cannot be reached</td>
+<td>The SARB API's reply, saved byte for byte and checked against its SHA-256. Used by default, so every run reproduces the summary; tick <code>REFRESH_FROM_SARB</code> to ask the SARB live instead</td>
 </tr>
 </tbody>
 </table>
 <p>To check another ZARONIA note, the files change and the notebook does not. When the next SENS notice is out, add a row to <code>sens_notices.csv</code>; to include newer coupons, move <code>DATA_AS_OF</code> forward or clear it.</p>
-<p><strong>Running it.</strong> In Google Colab, choose Runtime → Run all: the first cell fetches <code>inputs/</code> and <code>data/</code> from the GitHub repository named in <code>INPUTS_BASE_URL</code>. Run locally from a copy of the repository, it uses the files next to it. It needs pandas and matplotlib, which Colab already has. When it finishes, download <strong>SBSZ01_results.zip</strong> from the Files sidebar.</p>
+<p><strong>Running it.</strong> In Google Colab, choose Runtime → Run all: the first cell fetches <code>inputs/</code> and <code>data/</code> from the GitHub repository named in <code>INPUTS_BASE_URL</code>. Run locally from a copy of the repository, it uses the files next to it. It needs pandas and matplotlib, which Colab already has. By default it uses the saved SARB reply, so it reproduces the summary exactly, and a regression check near the end confirms the headline results; tick <code>REFRESH_FROM_SARB</code> to use live data, which can include later revisions. When it finishes, download <strong>SBSZ01_results.zip</strong> from the Files sidebar.</p>
 <p>Two cautions. The prices are scenarios from a simple model with stated assumptions, not fair values. And the notices do not state the nominal in issue, so the rand comparisons take it from the issuer's tap announcement of 17 September 2025. Where the rand amount then ties to the cent, it confirms the nominal as well as the rate.</p>
 <p><strong>Sources:</strong> the <a href="https://clientportal.jse.co.za/Content/JSEPricingSupplementsItems/2025/SBSZ01%20PricingSupplement2605.pdf">pricing supplement</a> dated 21 May 2025; the issuer's SENS interest notices; the <a href="https://senspdf.jse.co.za/documents/SENS_20250917_S510660.pdf">SENS tap notice of 17 September 2025</a>; the <a href="https://www.standardbank.com/static_file/Investor%20Relations/Documents/Debt-investors/SBSA-Domestic-Medium-term-programme/SBSA-Programme-Memorandum_2024.pdf">programme memorandum</a> dated 19 December 2024 (condition 7.2(h), printed page 49); the SARB's <a href="https://www.resbank.co.za/en/home/what-we-do/financial-markets/south-african-overnight-index-average">ZARONIA page</a>, web API and MPC statements; the government's list of <a href="https://www.gov.za/about-sa/public-holidays">public holidays</a>. Each input file names the source of every row.</p>
 </div>
@@ -7896,9 +7896,12 @@ a.anchor-link {
 <span class="c1"># they show as a small form you can edit.</span>
 <span class="c1"># ----------------------------------------------------------------------------</span>
 <span class="n">WALKTHROUGH_PAYMENT_DATE</span> <span class="o">=</span> <span class="s2">"2026-05-26"</span>  <span class="c1"># @param {type:"string"}</span>
+<span class="n">REFRESH_FROM_SARB</span> <span class="o">=</span> <span class="kc">False</span>                <span class="c1"># @param {type:"boolean"}</span>
 <span class="n">DATA_AS_OF</span> <span class="o">=</span> <span class="s2">"2026-11-13"</span>                <span class="c1"># @param {type:"string"}</span>
-<span class="c1"># DATA_AS_OF fixes the last fixing date used, so every run gives the results</span>
-<span class="c1"># described in the summary. Leave it empty to use everything published up to today.</span>
+<span class="c1"># By default the notebook uses the SARB reply saved in data/, checked against its</span>
+<span class="c1"># checksum, so every run reproduces the summary exactly. Tick REFRESH_FROM_SARB to</span>
+<span class="c1"># ask the SARB live instead; any fixing it has revised since is reported.</span>
+<span class="c1"># DATA_AS_OF is the last fixing date used; clear it to use everything up to today.</span>
 <span class="n">SCENARIO_WIDENINGS_BP</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">50</span><span class="p">]</span>      <span class="c1"># discount margin scenarios, over the contractual margin</span>
 <span class="n">INPUTS_BASE_URL</span> <span class="o">=</span> <span class="s2">"https://raw.githubusercontent.com/Ikaelelo/sbsz01-zaronia-coupon-check/main"</span>  <span class="c1"># @param {type:"string"}</span>
 <span class="c1"># INPUTS_BASE_URL is where the notebook fetches inputs/ and data/ when it cannot</span>
@@ -7999,7 +8002,11 @@ a.anchor-link {
 <span class="c1"># at the end so that it can be downloaded in one go.</span>
 <span class="n">OUTPUT_DIR</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"SBSZ01_results"</span><span class="p">)</span>
 <span class="n">RESULTS_ZIP</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"SBSZ01_results.zip"</span><span class="p">)</span>
-<span class="n">OUTPUT_DIR</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># Start from an empty results folder, so nothing from an earlier run is carried over.</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">OUTPUT_DIR</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">RESULTS_ZIP</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">missing_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">OUTPUT_DIR</span><span class="o">.</span><span class="n">mkdir</span><span class="p">()</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">save_and_show</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
@@ -8290,7 +8297,7 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="3.-Download-and-validate-daily-ZARONIA">3. Download and validate daily ZARONIA<a class="anchor-link" href="#3.-Download-and-validate-daily-ZARONIA">¶</a></h2><p>The notebook asks the SARB's API for series <code>MMRD855A</code>, from a few weeks before the first coupon up to <code>DATA_AS_OF</code> (13 November 2026), so every run uses the same data as the summary. Clear <code>DATA_AS_OF</code> to use everything published up to today. If the request fails, it uses <code>data/sarb_MMRD855A_cache.json</code>: the SARB's reply as downloaded on 16 November 2026, saved byte for byte, with its SHA-256 recorded next to it. The checksum is checked before the cache is used. When the SARB does answer, the notebook compares the live figures with the cache and reports any revision, then uses the live figures.</p>
+<h2 id="3.-Download-and-validate-daily-ZARONIA">3. Download and validate daily ZARONIA<a class="anchor-link" href="#3.-Download-and-validate-daily-ZARONIA">¶</a></h2><p>By default the notebook uses <code>data/sarb_MMRD855A_cache.json</code>: the SARB API's reply for series <code>MMRD855A</code>, downloaded on 16 November 2026 and saved byte for byte, with its SHA-256 recorded next to it and checked before use. That makes every run reproduce the summary exactly. Tick <code>REFRESH_FROM_SARB</code> in section 1 to ask the SARB live instead: the notebook then compares the live figures with the saved reply, reports any fixing the SARB has revised since, and uses the live figures, so the results can differ from the summary. Either way, only fixings up to <code>DATA_AS_OF</code> (13 November 2026) are used.</p>
 <p><strong>Which coupons can be calculated</strong> follows from the data: every coupon whose last fixing has been published by that date. With <code>DATA_AS_OF</code> cleared, the next coupon is included as soon as its fixings are out, without any change to the code.</p>
 <p><strong>Days with no fixing.</strong> Schedule 1, paragraph 2(a) of the pricing supplement says what to do when no ZARONIA is published for a business day: use the rate last published for an earlier business day. The notebook applies that rule wherever a fixing is missing, and reports every case as an exception to confirm. A gap in today's download shows only that no rate is there now, not that none was published by the contractual time on the day; the issuer's notice for that coupon would settle it, so those coupons are marked "fallback applied, unconfirmed". If there is no earlier fixing at all, paragraph 2(b) would apply, which the notebook does not implement, so it stops.</p>
 <p><strong>Checking the calendar against the data.</strong> A business day with no fixing that no coupon needs is printed too, because it often means the calendar is missing a holiday. That is how the local government elections holiday of Wednesday 4 November 2026 showed up: it is now in <code>inputs/declared_holidays.csv</code>. A row dated on a weekend or holiday, such as the series' row for Saturday 2 May 2026, is set aside and reported, because the lookback can never land on it.</p>
@@ -8358,30 +8365,45 @@ a.anchor-link {
 
 
 <span class="n">cached_series</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">parse_sarb</span><span class="p">(</span><span class="n">read_cache</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Asking the SARB API ..."</span><span class="p">)</span>
-<span class="k">try</span><span class="p">:</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">use_cache</span><span class="p">(</span><span class="n">reason</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The saved SARB reply, after its checksum has been checked."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Using the saved SARB reply in data/, retrieved </span><span class="si">{</span><span class="n">CACHE_META</span><span class="p">[</span><span class="s1">'retrieved_at_utc'</span><span class="p">][:</span><span class="mi">10</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">)."</span><span class="p">)</span>
+    <span class="n">series</span><span class="p">,</span> <span class="n">set_aside</span> <span class="o">=</span> <span class="n">parse_sarb</span><span class="p">(</span><span class="n">read_cache</span><span class="p">())</span>
+    <span class="n">provenance</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Saved SARB API reply"</span><span class="p">,</span> <span class="s2">"source_url"</span><span class="p">:</span> <span class="n">CACHE_META</span><span class="p">[</span><span class="s2">"request_url"</span><span class="p">],</span>
+                  <span class="s2">"retrieved_at_utc"</span><span class="p">:</span> <span class="n">CACHE_META</span><span class="p">[</span><span class="s2">"retrieved_at_utc"</span><span class="p">],</span>
+                  <span class="s2">"response_sha256"</span><span class="p">:</span> <span class="n">CACHE_META</span><span class="p">[</span><span class="s2">"sha256"</span><span class="p">],</span> <span class="s2">"note"</span><span class="p">:</span> <span class="n">reason</span><span class="p">}</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">d</span><span class="p">:</span> <span class="n">r</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">series</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">d</span> <span class="o">&lt;=</span> <span class="n">FETCH_END</span><span class="p">},</span> <span class="n">set_aside</span><span class="p">,</span> <span class="n">provenance</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">ask_sarb</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""Ask the SARB API live, and report any fixing it has revised since the saved reply."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Asking the SARB API ..."</span><span class="p">)</span>
     <span class="n">reply</span> <span class="o">=</span> <span class="n">fetch_bytes</span><span class="p">(</span><span class="n">SARB_URL</span><span class="p">)</span>
     <span class="n">series</span><span class="p">,</span> <span class="n">set_aside</span> <span class="o">=</span> <span class="n">parse_sarb</span><span class="p">(</span><span class="n">reply</span><span class="p">)</span>
     <span class="n">series</span> <span class="o">=</span> <span class="p">{</span><span class="n">d</span><span class="p">:</span> <span class="n">r</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">series</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">d</span> <span class="o">&lt;=</span> <span class="n">FETCH_END</span><span class="p">}</span>
     <span class="p">(</span><span class="n">OUTPUT_DIR</span> <span class="o">/</span> <span class="s2">"sarb_reply.json"</span><span class="p">)</span><span class="o">.</span><span class="n">write_bytes</span><span class="p">(</span><span class="n">reply</span><span class="p">)</span>
     <span class="n">revisions</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="p">):</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">cached_series</span><span class="p">[</span><span class="n">day</span><span class="p">]),</span> <span class="nb">str</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">day</span><span class="p">))]</span>
-                 <span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="n">cached_series</span> <span class="k">if</span> <span class="n">FETCH_START</span> <span class="o">&lt;=</span> <span class="n">day</span> <span class="ow">and</span> <span class="n">series</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">day</span><span class="p">)</span> <span class="o">!=</span> <span class="n">cached_series</span><span class="p">[</span><span class="n">day</span><span class="p">]</span>
-                 <span class="ow">and</span> <span class="n">day</span> <span class="o">&lt;=</span> <span class="nb">max</span><span class="p">(</span><span class="n">series</span><span class="p">)}</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"The SARB answered."</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">revisions</span> <span class="k">else</span>
-          <span class="sa">f</span><span class="s2">"The SARB now differs from the cached copy on </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">revisions</span><span class="p">)</span><span class="si">}</span><span class="s2"> date(s): </span><span class="si">{</span><span class="n">revisions</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                 <span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="n">cached_series</span>
+                 <span class="k">if</span> <span class="n">FETCH_START</span> <span class="o">&lt;=</span> <span class="n">day</span> <span class="o">&lt;=</span> <span class="nb">max</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="ow">and</span> <span class="n">series</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">day</span><span class="p">)</span> <span class="o">!=</span> <span class="n">cached_series</span><span class="p">[</span><span class="n">day</span><span class="p">]}</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"The SARB answered, with no revisions to the saved reply."</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">revisions</span> <span class="k">else</span>
+          <span class="sa">f</span><span class="s2">"The SARB now differs from the saved reply on </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">revisions</span><span class="p">)</span><span class="si">}</span><span class="s2"> date(s): </span><span class="si">{</span><span class="n">revisions</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="n">provenance</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Direct SARB API"</span><span class="p">,</span> <span class="s2">"source_url"</span><span class="p">:</span> <span class="n">SARB_URL</span><span class="p">,</span>
                   <span class="s2">"retrieved_at_utc"</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">tz</span><span class="o">=</span><span class="s2">"UTC"</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
                   <span class="s2">"response_sha256"</span><span class="p">:</span> <span class="n">sha256</span><span class="p">(</span><span class="n">reply</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">(),</span>
-                  <span class="s2">"differences_from_cached_copy"</span><span class="p">:</span> <span class="n">revisions</span><span class="p">}</span>
-<span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ArithmeticError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The SARB could not be used (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">)."</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Using the cached SARB reply in data/, retrieved </span><span class="si">{</span><span class="n">CACHE_META</span><span class="p">[</span><span class="s1">'retrieved_at_utc'</span><span class="p">][:</span><span class="mi">10</span><span class="p">]</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
-    <span class="n">series</span><span class="p">,</span> <span class="n">set_aside</span> <span class="o">=</span> <span class="n">parse_sarb</span><span class="p">(</span><span class="n">read_cache</span><span class="p">())</span>
-    <span class="n">series</span> <span class="o">=</span> <span class="p">{</span><span class="n">d</span><span class="p">:</span> <span class="n">r</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">series</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">d</span> <span class="o">&lt;=</span> <span class="n">FETCH_END</span><span class="p">}</span>
-    <span class="n">provenance</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Cached SARB API reply"</span><span class="p">,</span> <span class="s2">"source_url"</span><span class="p">:</span> <span class="n">CACHE_META</span><span class="p">[</span><span class="s2">"request_url"</span><span class="p">],</span>
-                  <span class="s2">"retrieved_at_utc"</span><span class="p">:</span> <span class="n">CACHE_META</span><span class="p">[</span><span class="s2">"retrieved_at_utc"</span><span class="p">],</span>
-                  <span class="s2">"response_sha256"</span><span class="p">:</span> <span class="n">CACHE_META</span><span class="p">[</span><span class="s2">"sha256"</span><span class="p">],</span>
-                  <span class="s2">"live_request_error"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">}</span>
+                  <span class="s2">"differences_from_saved_reply"</span><span class="p">:</span> <span class="n">revisions</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">series</span><span class="p">,</span> <span class="n">set_aside</span><span class="p">,</span> <span class="n">provenance</span>
+
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">REFRESH_FROM_SARB</span><span class="p">:</span>
+    <span class="n">series</span><span class="p">,</span> <span class="n">set_aside</span><span class="p">,</span> <span class="n">provenance</span> <span class="o">=</span> <span class="n">use_cache</span><span class="p">(</span><span class="s2">"REFRESH_FROM_SARB is off, so the results match the summary"</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">series</span><span class="p">,</span> <span class="n">set_aside</span><span class="p">,</span> <span class="n">provenance</span> <span class="o">=</span> <span class="n">ask_sarb</span><span class="p">()</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ArithmeticError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The SARB could not be used (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">)."</span><span class="p">)</span>
+        <span class="n">series</span><span class="p">,</span> <span class="n">set_aside</span><span class="p">,</span> <span class="n">provenance</span> <span class="o">=</span> <span class="n">use_cache</span><span class="p">(</span><span class="s2">"the live request failed"</span><span class="p">)</span>
 <span class="n">fixing_source</span> <span class="o">=</span> <span class="n">provenance</span><span class="p">[</span><span class="s2">"source"</span><span class="p">]</span>
 <span class="n">last_fixing_date</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
 
@@ -8458,16 +8480,8 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Asking the SARB API ...
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>The SARB could not be used (URLError: &lt;urlopen error Tunnel connection failed: 403 Forbidden&gt;).
-Using the cached SARB reply in data/, retrieved 2026-11-16.
-Fixings used: Cached SARB API reply | data as of 2026-11-13 | 5 coupons can be calculated | 315 fixing dates needed, 312 published and 3 filled by the fallback
+<pre>Using the saved SARB reply in data/, retrieved 2026-11-16 (REFRESH_FROM_SARB is off, so the results match the summary).
+Fixings used: Saved SARB API reply | data as of 2026-11-13 | 5 coupons can be calculated | 315 fixing dates needed, 312 published and 3 filled by the fallback
 Exceptions to confirm: days with no fixing in this download, and the rate paragraph 2(a) uses instead.
   2026-01-29: uses the fixing for 2026-01-28, 6.6030%. Confirm against the issuer's notice.
   2026-07-15: uses the fixing for 2026-07-14, 6.8520%. Confirm against the issuer's notice.
@@ -8799,7 +8813,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <td>6.6020</td>
 <td></td>
 <td>1.000180876712328767123287671</td>
-<td>Cached SARB API reply</td>
+<td>Saved SARB API reply</td>
 </tr>
 <tr>
 <th>25</th>
@@ -8810,7 +8824,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <td>6.6130</td>
 <td></td>
 <td>1.000905890410958904109589041</td>
-<td>Cached SARB API reply</td>
+<td>Saved SARB API reply</td>
 </tr>
 <tr>
 <th>26</th>
@@ -8821,7 +8835,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <td>6.6170</td>
 <td></td>
 <td>1.000181287671232876712328767</td>
-<td>Cached SARB API reply</td>
+<td>Saved SARB API reply</td>
 </tr>
 <tr>
 <th>58</th>
@@ -8832,7 +8846,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <td>6.6080</td>
 <td></td>
 <td>1.000181041095890410958904110</td>
-<td>Cached SARB API reply</td>
+<td>Saved SARB API reply</td>
 </tr>
 </tbody>
 </table>
@@ -8873,7 +8887,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <tbody>
 <tr>
 <th>Input</th>
-<td>Cached SARB API reply</td>
+<td>Saved SARB API reply</td>
 </tr>
 <tr>
 <th>Calculated benchmark before rounding (%)</th>
@@ -8979,7 +8993,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <p>Each result is checked against the issuer's SENS notice in two ways.</p>
 <ul>
 <li><strong>The rate, at the notice's own precision.</strong> The August 2025 notice prints four decimals and the May 2026 notice prints three (7.677, which could also be 7.6770 without its last zero), so the calculated coupon is rounded to however many decimals that notice shows before the two are compared. Comparing everything at three decimals would wrongly report a difference for a notice that prints, and agrees to, four.</li>
-<li><strong>The rand amount.</strong> The total interest is worked out at the calculated rate on the nominal in issue, in the two ways the documents allow: rounded once on the whole issue, and rounded per R1 million calculation amount as condition 7.2(h) of the programme memorandum says. The cash check is the stronger of the two tests, because it pins down the rate, the day count and the nominal all at once.</li>
+<li><strong>The rand amount.</strong> The total interest is worked out at the calculated rate on the nominal in issue, in the two rounding methods compared: rounded once on the whole issue, and rounded per R1 million calculation amount, which is the method condition 7.2(h) of the programme memorandum specifies. The cash check is the stronger of the two tests, because it pins down the rate, the day count and the nominal all at once.</li>
 </ul>
 <p>Three periods have a repo-rate change inside their observation window, so ZARONIA steps by about 25 basis points part-way through (they show as a wide fixings range in the table). Those are harder tests of the lookback than the flat May 2026 period: picking up the step a day early or late would move the coupon in the fourth decimal and the cash by thousands of rand.</p>
 <p>Two periods include a day with no fixing in the SARB's series, and Schedule 1, paragraph 2(a) supplies the rate. Every substitution is listed under the table.</p>
@@ -9010,7 +9024,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">interest_cash</span><span class="p">(</span><span class="n">rate_pct</span><span class="p">,</span> <span class="n">nominal</span><span class="p">,</span> <span class="n">days</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Total interest in rand, rounded the two ways the documents allow.</span>
+<span class="w">    </span><span class="sd">"""Total interest in rand, under the two rounding methods compared.</span>
 
 <span class="sd">    aggregate: interest on the whole nominal, rounded once to the cent.</span>
 <span class="sd">    per_note: interest on one calculation amount, rounded to the cent (half up),</span>
@@ -9064,7 +9078,10 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
     <span class="k">elif</span> <span class="n">cash_ok</span><span class="p">:</span>
         <span class="n">row</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"rate and cash tie"</span> <span class="k">if</span> <span class="n">rate_ok</span> <span class="k">else</span> <span class="s2">"cash ties"</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">row</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"rate ties, cash differs"</span> <span class="k">if</span> <span class="n">rate_ok</span> <span class="k">else</span> <span class="s2">"differs"</span>
+        <span class="n">gap_pct</span> <span class="o">=</span> <span class="p">(</span><span class="n">D</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"cash_diff_aggregate_rand"</span><span class="p">])</span> <span class="o">/</span> <span class="n">D</span><span class="p">(</span><span class="n">notice</span><span class="p">[</span><span class="s2">"cash"</span><span class="p">])</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">copy_abs</span><span class="p">()</span>
+        <span class="n">direction</span> <span class="o">=</span> <span class="s2">"higher"</span> <span class="k">if</span> <span class="n">D</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"cash_diff_aggregate_rand"</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">"lower"</span>
+        <span class="n">row</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">"rate ties; our cash </span><span class="si">{</span><span class="n">gap_pct</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">% </span><span class="si">{</span><span class="n">direction</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">rate_ok</span>
+                         <span class="k">else</span> <span class="sa">f</span><span class="s2">"rate and cash differ; our cash </span><span class="si">{</span><span class="n">gap_pct</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">% </span><span class="si">{</span><span class="n">direction</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
     <span class="n">all_substitutions</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">end</span><span class="p">,</span> <span class="o">*</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">substitutions</span><span class="p">]</span>
 
@@ -9192,7 +9209,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <td>1796000000</td>
 <td>2.7</td>
 <td>0</td>
-<td>rate ties, cash differs</td>
+<td>rate ties; our cash 0.003% higher</td>
 </tr>
 <tr>
 <th>4</th>
@@ -10125,6 +10142,74 @@ For example, a price of R99.50 implies a discount margin of 129.26 bp.
 </div>
 </div>
 </div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=regression-notes">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Regression-check:-do-the-results-still-hold?">Regression check: do the results still hold?<a class="anchor-link" href="#Regression-check:-do-the-results-still-hold?">¶</a></h2><p>A notebook that runs to the end has only shown that no cell crashed. This cell checks the answers. On the saved SARB reply, the headline results are known, so it asserts them: the five calculated coupons, the two cash amounts that tie to the cent, the May difference, the observation shift's miss in November, the three-decimal variant's tie in May, the three fallback days and the scenario prices. The GitHub workflow runs the notebook on every change, so a change that moves any of these turns the check red instead of quietly producing a different number.</p>
+<p>With <code>REFRESH_FROM_SARB</code> ticked, the live data may differ, so the cell reports any difference instead of stopping.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=regression-code">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># The results the summary reports, on the saved SARB reply (data as of 13 November 2026).</span>
+<span class="c1"># Like the known-answer tests, these values are written out on purpose: the check</span>
+<span class="c1"># is that the code still reproduces them.</span>
+<span class="n">EXPECTED</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"coupons"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"2025-08-26"</span><span class="p">:</span> <span class="s2">"8.1713"</span><span class="p">,</span> <span class="s2">"2025-11-26"</span><span class="p">:</span> <span class="s2">"7.9343"</span><span class="p">,</span> <span class="s2">"2026-02-26"</span><span class="p">:</span> <span class="s2">"7.6815"</span><span class="p">,</span>
+                <span class="s2">"2026-05-26"</span><span class="p">:</span> <span class="s2">"7.6772"</span><span class="p">,</span> <span class="s2">"2026-08-26"</span><span class="p">:</span> <span class="s2">"7.9058"</span><span class="p">},</span>
+    <span class="s2">"cash vs SENS, rounded once on the issue"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"2025-08-26"</span><span class="p">:</span> <span class="s2">"+0.00"</span><span class="p">,</span> <span class="s2">"2025-11-26"</span><span class="p">:</span> <span class="s2">"+0.00"</span><span class="p">,</span> <span class="s2">"2026-05-26"</span><span class="p">:</span> <span class="s2">"+875.86"</span><span class="p">},</span>
+    <span class="s2">"observation shift, Nov 2025 cash vs SENS"</span><span class="p">:</span> <span class="s2">"+905.38"</span><span class="p">,</span>
+    <span class="s2">"benchmark rounded to 3 decimals, May 2026 cash vs SENS"</span><span class="p">:</span> <span class="s2">"+0.00"</span><span class="p">,</span>
+    <span class="s2">"fallback days"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"2026-01-29"</span><span class="p">,</span> <span class="s2">"2026-07-15"</span><span class="p">,</span> <span class="s2">"2026-07-16"</span><span class="p">],</span>
+    <span class="s2">"scenario prices per R100"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"100.0000"</span><span class="p">,</span> <span class="s2">"99.5413"</span><span class="p">,</span> <span class="s2">"99.0850"</span><span class="p">],</span>
+<span class="p">}</span>
+<span class="n">found</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"coupons"</span><span class="p">:</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">"payment_date"</span><span class="p">]):</span> <span class="n">r</span><span class="p">[</span><span class="s2">"calculated_coupon_pct"</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">},</span>
+    <span class="s2">"cash vs SENS, rounded once on the issue"</span><span class="p">:</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">"payment_date"</span><span class="p">]):</span> <span class="n">r</span><span class="p">[</span><span class="s2">"cash_diff_aggregate_rand"</span><span class="p">]</span>
+                                                <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span> <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s2">"cash_diff_aggregate_rand"</span><span class="p">]},</span>
+    <span class="s2">"observation shift, Nov 2025 cash vs SENS"</span><span class="p">:</span>
+        <span class="n">conventions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="sa">f</span><span class="s2">"Observation shift, lookback </span><span class="si">{</span><span class="n">LOOKBACK</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"2025-11-26 cash vs SENS (R)"</span><span class="p">],</span>
+    <span class="s2">"benchmark rounded to 3 decimals, May 2026 cash vs SENS"</span><span class="p">:</span>
+        <span class="n">conventions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">"Benchmark rounded to 3 decimals"</span><span class="p">,</span> <span class="s2">"2026-05-26 cash vs SENS (R)"</span><span class="p">],</span>
+    <span class="s2">"fallback days"</span><span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">SUBSTITUTED</span><span class="p">)],</span>
+    <span class="s2">"scenario prices per R100"</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">p</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">scenario</span><span class="p">[</span><span class="s2">"price_per_R100"</span><span class="p">]],</span>
+<span class="p">}</span>
+<span class="n">differences</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="p">(</span><span class="n">EXPECTED</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">found</span><span class="p">[</span><span class="n">name</span><span class="p">])</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">EXPECTED</span> <span class="k">if</span> <span class="n">EXPECTED</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">!=</span> <span class="n">found</span><span class="p">[</span><span class="n">name</span><span class="p">]}</span>
+<span class="k">if</span> <span class="n">REFRESH_FROM_SARB</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Live data: results differ from the summary in:"</span> <span class="k">if</span> <span class="n">differences</span> <span class="k">else</span>
+          <span class="s2">"Live data: every headline result matches the summary."</span><span class="p">,</span> <span class="n">differences</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">differences</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Results no longer match the summary: </span><span class="si">{</span><span class="n">differences</span><span class="si">}</span><span class="s2">"</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Regression check passed: every headline result matches the summary."</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>Regression check passed: every headline result matches the summary.
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=export-notes">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
@@ -10141,7 +10226,7 @@ For example, a price of R99.50 implies a discount margin of 129.26 bp.
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [16]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">provenance</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
