@@ -7842,8 +7842,8 @@ a.anchor-link {
 </tr>
 </tbody>
 </table>
-<p>To check another ZARONIA note, the files change and the notebook does not. When the next SENS notice is out, add a row to <code>sens_notices.csv</code>; when the next coupon's fixings are published, it is picked up automatically.</p>
-<p><strong>Running it.</strong> In Google Colab, choose Runtime → Run all: the first cell fetches <code>inputs/</code> and <code>data/</code> from the GitHub repository named in <code>INPUTS_BASE_URL</code>. Run locally from a copy of the repository, it uses the files next to it. It needs only standard Python. When it finishes, download <strong>SBSZ01_results.zip</strong> from the Files sidebar.</p>
+<p>To check another ZARONIA note, the files change and the notebook does not. When the next SENS notice is out, add a row to <code>sens_notices.csv</code>; to include newer coupons, move <code>DATA_AS_OF</code> forward or clear it.</p>
+<p><strong>Running it.</strong> In Google Colab, choose Runtime → Run all: the first cell fetches <code>inputs/</code> and <code>data/</code> from the GitHub repository named in <code>INPUTS_BASE_URL</code>. Run locally from a copy of the repository, it uses the files next to it. It needs pandas and matplotlib, which Colab already has. When it finishes, download <strong>SBSZ01_results.zip</strong> from the Files sidebar.</p>
 <p>Two cautions. The prices are scenarios from a simple model with stated assumptions, not fair values. And the notices do not state the nominal in issue, so the rand comparisons take it from the issuer's tap announcement of 17 September 2025. Where the rand amount then ties to the cent, it confirms the nominal as well as the rate.</p>
 <p><strong>Sources:</strong> the <a href="https://clientportal.jse.co.za/Content/JSEPricingSupplementsItems/2025/SBSZ01%20PricingSupplement2605.pdf">pricing supplement</a> dated 21 May 2025; the issuer's SENS interest notices; the <a href="https://senspdf.jse.co.za/documents/SENS_20250917_S510660.pdf">SENS tap notice of 17 September 2025</a>; the <a href="https://www.standardbank.com/static_file/Investor%20Relations/Documents/Debt-investors/SBSA-Domestic-Medium-term-programme/SBSA-Programme-Memorandum_2024.pdf">programme memorandum</a> dated 19 December 2024 (condition 7.2(h), printed page 49); the SARB's <a href="https://www.resbank.co.za/en/home/what-we-do/financial-markets/south-african-overnight-index-average">ZARONIA page</a>, web API and MPC statements; the government's list of <a href="https://www.gov.za/about-sa/public-holidays">public holidays</a>. Each input file names the source of every row.</p>
 </div>
@@ -7896,6 +7896,9 @@ a.anchor-link {
 <span class="c1"># they show as a small form you can edit.</span>
 <span class="c1"># ----------------------------------------------------------------------------</span>
 <span class="n">WALKTHROUGH_PAYMENT_DATE</span> <span class="o">=</span> <span class="s2">"2026-05-26"</span>  <span class="c1"># @param {type:"string"}</span>
+<span class="n">DATA_AS_OF</span> <span class="o">=</span> <span class="s2">"2026-11-13"</span>                <span class="c1"># @param {type:"string"}</span>
+<span class="c1"># DATA_AS_OF fixes the last fixing date used, so every run gives the results</span>
+<span class="c1"># described in the summary. Leave it empty to use everything published up to today.</span>
 <span class="n">SCENARIO_WIDENINGS_BP</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">50</span><span class="p">]</span>      <span class="c1"># discount margin scenarios, over the contractual margin</span>
 <span class="n">INPUTS_BASE_URL</span> <span class="o">=</span> <span class="s2">"https://raw.githubusercontent.com/Ikaelelo/sbsz01-zaronia-coupon-check/main"</span>  <span class="c1"># @param {type:"string"}</span>
 <span class="c1"># INPUTS_BASE_URL is where the notebook fetches inputs/ and data/ when it cannot</span>
@@ -7960,8 +7963,9 @@ a.anchor-link {
 <span class="n">SARB_SERIES</span> <span class="o">=</span> <span class="n">TERMS_FILE</span><span class="p">[</span><span class="s2">"reference_rate"</span><span class="p">][</span><span class="s2">"sarb_series"</span><span class="p">]</span>
 <span class="c1"># The notebook implements one convention of each kind. If the terms file ever</span>
 <span class="c1"># describes a different note, stop rather than calculate it the wrong way.</span>
-<span class="k">assert</span> <span class="n">term</span><span class="p">[</span><span class="s2">"business_day_convention"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"modified_following"</span>
-<span class="k">assert</span> <span class="n">term</span><span class="p">[</span><span class="s2">"observation_shift"</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">False</span> <span class="ow">and</span> <span class="n">term</span><span class="p">[</span><span class="s2">"missing_fixing_rule"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"previous_published"</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">term</span><span class="p">[</span><span class="s2">"business_day_convention"</span><span class="p">],</span> <span class="n">term</span><span class="p">[</span><span class="s2">"observation_shift"</span><span class="p">],</span> <span class="n">term</span><span class="p">[</span><span class="s2">"missing_fixing_rule"</span><span class="p">])</span> <span class="o">!=</span> <span class="p">(</span>
+        <span class="s2">"modified_following"</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"previous_published"</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"These terms use a convention this notebook does not implement."</span><span class="p">)</span>
 
 <span class="c1"># ----------------------------------------------------------------------------</span>
 <span class="c1"># What the issuer published, and the other observed facts the checks use.</span>
@@ -8286,9 +8290,9 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="3.-Download-and-validate-daily-ZARONIA">3. Download and validate daily ZARONIA<a class="anchor-link" href="#3.-Download-and-validate-daily-ZARONIA">¶</a></h2><p>The notebook asks the SARB's API for series <code>MMRD855A</code>, from a few weeks before the first coupon up to today. If the request fails, it uses <code>data/sarb_MMRD855A_cache.json</code>: the SARB's reply as downloaded on 16 November 2026, saved byte for byte, with its SHA-256 recorded next to it. The checksum is checked before the cache is used. When the SARB does answer, the notebook compares the live figures with the cache and reports any revision, then uses the live figures.</p>
-<p><strong>Which coupons can be calculated</strong> follows from the data: every coupon whose last fixing has been published. When the SARB publishes the fixings for the next coupon, the notebook includes it without any change to the code.</p>
-<p><strong>Days with no fixing.</strong> Schedule 1, paragraph 2(a) of the pricing supplement says what to do when no ZARONIA is published for a business day: use the rate last published for an earlier business day. The notebook applies that rule wherever a fixing is missing and lists every day it applied it to. A longer run than two business days in a row stops the notebook instead, because that looks like a problem with the download, and an invented fixing would flow straight into the coupon. Strictly, the series as it stands today shows only that no rate is there now; whether one was published by the contractual time on the day is something the issuer's notices would settle.</p>
+<h2 id="3.-Download-and-validate-daily-ZARONIA">3. Download and validate daily ZARONIA<a class="anchor-link" href="#3.-Download-and-validate-daily-ZARONIA">¶</a></h2><p>The notebook asks the SARB's API for series <code>MMRD855A</code>, from a few weeks before the first coupon up to <code>DATA_AS_OF</code> (13 November 2026), so every run uses the same data as the summary. Clear <code>DATA_AS_OF</code> to use everything published up to today. If the request fails, it uses <code>data/sarb_MMRD855A_cache.json</code>: the SARB's reply as downloaded on 16 November 2026, saved byte for byte, with its SHA-256 recorded next to it. The checksum is checked before the cache is used. When the SARB does answer, the notebook compares the live figures with the cache and reports any revision, then uses the live figures.</p>
+<p><strong>Which coupons can be calculated</strong> follows from the data: every coupon whose last fixing has been published by that date. With <code>DATA_AS_OF</code> cleared, the next coupon is included as soon as its fixings are out, without any change to the code.</p>
+<p><strong>Days with no fixing.</strong> Schedule 1, paragraph 2(a) of the pricing supplement says what to do when no ZARONIA is published for a business day: use the rate last published for an earlier business day. The notebook applies that rule wherever a fixing is missing, and reports every case as an exception to confirm. A gap in today's download shows only that no rate is there now, not that none was published by the contractual time on the day; the issuer's notice for that coupon would settle it, so those coupons are marked "fallback applied, unconfirmed". If there is no earlier fixing at all, paragraph 2(b) would apply, which the notebook does not implement, so it stops.</p>
 <p><strong>Checking the calendar against the data.</strong> A business day with no fixing that no coupon needs is printed too, because it often means the calendar is missing a holiday. That is how the local government elections holiday of Wednesday 4 November 2026 showed up: it is now in <code>inputs/declared_holidays.csv</code>. A row dated on a weekend or holiday, such as the series' row for Saturday 2 May 2026, is set aside and reported, because the lookback can never land on it.</p>
 </div>
 </div>
@@ -8301,14 +8305,10 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># A data-quality choice, not a contract term: if more than this many business days</span>
-<span class="c1"># in a row have no fixing, treat it as a problem with the data and stop.</span>
-<span class="n">MAX_MISSING_IN_A_ROW</span> <span class="o">=</span> <span class="mi">2</span>
-
-<span class="c1"># Ask for a little more history than the first coupon needs, so that the</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Ask for a little more history than the first coupon needs, so that the</span>
 <span class="c1"># alternative lookbacks tested in section 4b have their fixings too.</span>
 <span class="n">FETCH_START</span> <span class="o">=</span> <span class="n">move_business_days</span><span class="p">(</span><span class="n">INTEREST_COMMENCEMENT</span><span class="p">,</span> <span class="o">-</span><span class="p">(</span><span class="n">LOOKBACK</span> <span class="o">+</span> <span class="mi">10</span><span class="p">))</span>
-<span class="n">FETCH_END</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">(),</span> <span class="n">MATURITY</span><span class="p">)</span>
+<span class="n">FETCH_END</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">date</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">DATA_AS_OF</span><span class="p">)</span> <span class="k">if</span> <span class="n">DATA_AS_OF</span> <span class="k">else</span> <span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">(),</span> <span class="n">MATURITY</span><span class="p">)</span>
 <span class="n">SARB_URL</span> <span class="o">=</span> <span class="n">TERMS_FILE</span><span class="p">[</span><span class="s2">"reference_rate"</span><span class="p">][</span><span class="s2">"api_url_template"</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
     <span class="n">series</span><span class="o">=</span><span class="n">SARB_SERIES</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">FETCH_START</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">FETCH_END</span><span class="p">)</span>
 <span class="n">CACHE_FILE</span> <span class="o">=</span> <span class="n">PROJECT</span> <span class="o">/</span> <span class="s2">"data/sarb_MMRD855A_cache.json"</span>
@@ -8362,6 +8362,7 @@ a.anchor-link {
 <span class="k">try</span><span class="p">:</span>
     <span class="n">reply</span> <span class="o">=</span> <span class="n">fetch_bytes</span><span class="p">(</span><span class="n">SARB_URL</span><span class="p">)</span>
     <span class="n">series</span><span class="p">,</span> <span class="n">set_aside</span> <span class="o">=</span> <span class="n">parse_sarb</span><span class="p">(</span><span class="n">reply</span><span class="p">)</span>
+    <span class="n">series</span> <span class="o">=</span> <span class="p">{</span><span class="n">d</span><span class="p">:</span> <span class="n">r</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">series</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">d</span> <span class="o">&lt;=</span> <span class="n">FETCH_END</span><span class="p">}</span>
     <span class="p">(</span><span class="n">OUTPUT_DIR</span> <span class="o">/</span> <span class="s2">"sarb_reply.json"</span><span class="p">)</span><span class="o">.</span><span class="n">write_bytes</span><span class="p">(</span><span class="n">reply</span><span class="p">)</span>
     <span class="n">revisions</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="p">):</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">cached_series</span><span class="p">[</span><span class="n">day</span><span class="p">]),</span> <span class="nb">str</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">day</span><span class="p">))]</span>
                  <span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="n">cached_series</span> <span class="k">if</span> <span class="n">FETCH_START</span> <span class="o">&lt;=</span> <span class="n">day</span> <span class="ow">and</span> <span class="n">series</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">day</span><span class="p">)</span> <span class="o">!=</span> <span class="n">cached_series</span><span class="p">[</span><span class="n">day</span><span class="p">]</span>
@@ -8376,6 +8377,7 @@ a.anchor-link {
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The SARB could not be used (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">)."</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Using the cached SARB reply in data/, retrieved </span><span class="si">{</span><span class="n">CACHE_META</span><span class="p">[</span><span class="s1">'retrieved_at_utc'</span><span class="p">][:</span><span class="mi">10</span><span class="p">]</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
     <span class="n">series</span><span class="p">,</span> <span class="n">set_aside</span> <span class="o">=</span> <span class="n">parse_sarb</span><span class="p">(</span><span class="n">read_cache</span><span class="p">())</span>
+    <span class="n">series</span> <span class="o">=</span> <span class="p">{</span><span class="n">d</span><span class="p">:</span> <span class="n">r</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">series</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">d</span> <span class="o">&lt;=</span> <span class="n">FETCH_END</span><span class="p">}</span>
     <span class="n">provenance</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Cached SARB API reply"</span><span class="p">,</span> <span class="s2">"source_url"</span><span class="p">:</span> <span class="n">CACHE_META</span><span class="p">[</span><span class="s2">"request_url"</span><span class="p">],</span>
                   <span class="s2">"retrieved_at_utc"</span><span class="p">:</span> <span class="n">CACHE_META</span><span class="p">[</span><span class="s2">"retrieved_at_utc"</span><span class="p">],</span>
                   <span class="s2">"response_sha256"</span><span class="p">:</span> <span class="n">CACHE_META</span><span class="p">[</span><span class="s2">"sha256"</span><span class="p">],</span>
@@ -8393,18 +8395,19 @@ a.anchor-link {
 <span class="k">def</span><span class="w"> </span><span class="nf">fixing_for</span><span class="p">(</span><span class="n">day</span><span class="p">,</span> <span class="n">record</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""The fixing that applies to a business day, with the contract's fallback.</span>
 
-<span class="sd">    Schedule 1, paragraph 2(a): if no ZARONIA is published for a business day, use</span>
+<span class="sd">    Schedule 1, paragraph 2(a): if no ZARONIA is available for a business day, use</span>
 <span class="sd">    the rate last published for an earlier business day. Every use is recorded in</span>
-<span class="sd">    SUBSTITUTED. A longer run of missing days than MAX_MISSING_IN_A_ROW stops the run.</span>
+<span class="sd">    SUBSTITUTED and reported as an exception to confirm, because a gap in today's</span>
+<span class="sd">    download does not prove the rate was unavailable at the contractual time.</span>
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="n">day</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">series</span><span class="p">[</span><span class="n">day</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">day</span> <span class="o">&gt;</span> <span class="n">last_fixing_date</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No fixing for </span><span class="si">{</span><span class="n">day</span><span class="si">}</span><span class="s2"> has been published yet."</span><span class="p">)</span>
-    <span class="n">earlier</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">series</span> <span class="k">if</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="n">day</span><span class="p">)</span>
-    <span class="n">run</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">accrual_schedule</span><span class="p">(</span><span class="n">move_business_days</span><span class="p">(</span><span class="n">earlier</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">move_business_days</span><span class="p">(</span><span class="n">day</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
-    <span class="k">if</span> <span class="n">run</span> <span class="o">&gt;</span> <span class="n">MAX_MISSING_IN_A_ROW</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">run</span><span class="si">}</span><span class="s2"> business days in a row without a fixing, up to </span><span class="si">{</span><span class="n">day</span><span class="si">}</span><span class="s2">: check the data."</span><span class="p">)</span>
+    <span class="n">earlier</span> <span class="o">=</span> <span class="nb">max</span><span class="p">((</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">series</span> <span class="k">if</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="n">day</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">earlier</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Paragraph 2(b), the repo rate plus an average spread, is not implemented.</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No earlier fixing for </span><span class="si">{</span><span class="n">day</span><span class="si">}</span><span class="s2">: paragraph 2(b) would apply."</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">record</span><span class="p">:</span>
         <span class="n">SUBSTITUTED</span><span class="p">[</span><span class="n">day</span><span class="p">]</span> <span class="o">=</span> <span class="n">earlier</span>
     <span class="k">return</span> <span class="n">series</span><span class="p">[</span><span class="n">earlier</span><span class="p">]</span>
@@ -8418,18 +8421,19 @@ a.anchor-link {
                       <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">valuation_observations</span><span class="p">))</span>
 <span class="n">fixings</span> <span class="o">=</span> <span class="p">{</span><span class="n">day</span><span class="p">:</span> <span class="n">series</span><span class="p">[</span><span class="n">day</span><span class="p">]</span> <span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="n">all_required</span> <span class="k">if</span> <span class="n">day</span> <span class="ow">in</span> <span class="n">series</span><span class="p">}</span>
 <span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="n">all_required</span><span class="p">:</span>
-    <span class="n">fixing_for</span><span class="p">(</span><span class="n">day</span><span class="p">)</span>   <span class="c1"># applies and records the fallback, or stops on a real data problem</span>
+    <span class="n">fixing_for</span><span class="p">(</span><span class="n">day</span><span class="p">)</span>   <span class="c1"># applies and records the fallback where a fixing is missing</span>
 
 <span class="c1"># Two cross-checks of the calendar against the data. A weekday with no fixing that</span>
 <span class="c1"># no coupon needs, and a fixing on a day the calendar calls a holiday, both point to</span>
 <span class="c1"># a calendar that may be out of date.</span>
 <span class="n">quiet_weekdays</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">pd</span><span class="o">.</span><span class="n">bdate_range</span><span class="p">(</span><span class="n">FETCH_START</span><span class="p">,</span> <span class="n">last_fixing_date</span><span class="p">)</span><span class="o">.</span><span class="n">date</span>
                   <span class="k">if</span> <span class="n">is_business_day</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="ow">and</span> <span class="n">d</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">series</span> <span class="ow">and</span> <span class="n">d</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SUBSTITUTED</span><span class="p">]</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Fixings used: </span><span class="si">{</span><span class="n">fixing_source</span><span class="si">}</span><span class="s2"> | series runs to </span><span class="si">{</span><span class="n">last_fixing_date</span><span class="si">}</span><span class="s2"> | "</span>
-      <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">paid_periods</span><span class="p">)</span><span class="si">}</span><span class="s2"> coupons can be calculated | </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">all_required</span><span class="p">)</span><span class="si">}</span><span class="s2"> fixing dates needed"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Days with no fixing, and the rate Schedule 1, paragraph 2(a) uses instead:"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Fixings used: </span><span class="si">{</span><span class="n">fixing_source</span><span class="si">}</span><span class="s2"> | data as of </span><span class="si">{</span><span class="n">FETCH_END</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">paid_periods</span><span class="p">)</span><span class="si">}</span><span class="s2"> coupons can be calculated | "</span>
+      <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">all_required</span><span class="p">)</span><span class="si">}</span><span class="s2"> fixing dates needed, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">all_required</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">SUBSTITUTED</span><span class="p">)</span><span class="si">}</span><span class="s2"> published and "</span>
+      <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">SUBSTITUTED</span><span class="p">)</span><span class="si">}</span><span class="s2"> filled by the fallback"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Exceptions to confirm: days with no fixing in this download, and the rate paragraph 2(a) uses instead."</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">day</span><span class="p">,</span> <span class="n">earlier</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">SUBSTITUTED</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">day</span><span class="si">}</span><span class="s2">: uses the fixing for </span><span class="si">{</span><span class="n">earlier</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">series</span><span class="p">[</span><span class="n">earlier</span><span class="p">]</span><span class="si">}</span><span class="s2">%"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">day</span><span class="si">}</span><span class="s2">: uses the fixing for </span><span class="si">{</span><span class="n">earlier</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">series</span><span class="p">[</span><span class="n">earlier</span><span class="p">]</span><span class="si">}</span><span class="s2">%. Confirm against the issuer's notice."</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="n">quiet_weekdays</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">day</span><span class="si">}</span><span class="s2">: no fixing either, but no coupon calculated here needs it. Check the calendar."</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">day</span><span class="p">,</span> <span class="n">rate</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">set_aside</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
@@ -8439,7 +8443,8 @@ a.anchor-link {
 <span class="n">fixing_table</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"reference_date"</span><span class="p">:</span> <span class="n">all_required</span><span class="p">,</span>
                              <span class="s2">"zaronia_pct"</span><span class="p">:</span> <span class="p">[</span><span class="n">fixing_for</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">all_required</span><span class="p">],</span>
                              <span class="s2">"substituted_from"</span><span class="p">:</span> <span class="p">[</span><span class="n">SUBSTITUTED</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">all_required</span><span class="p">],</span>
-                             <span class="s2">"source"</span><span class="p">:</span> <span class="n">fixing_source</span><span class="p">})</span>
+                             <span class="s2">"source"</span><span class="p">:</span> <span class="n">fixing_source</span><span class="p">,</span>
+                             <span class="s2">"retrieved_at_utc"</span><span class="p">:</span> <span class="n">provenance</span><span class="p">[</span><span class="s2">"retrieved_at_utc"</span><span class="p">]})</span>
 <span class="n">fixing_table</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">OUTPUT_DIR</span> <span class="o">/</span> <span class="s2">"zaronia_fixings_used.csv"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -8462,11 +8467,11 @@ a.anchor-link {
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>The SARB could not be used (URLError: &lt;urlopen error Tunnel connection failed: 403 Forbidden&gt;).
 Using the cached SARB reply in data/, retrieved 2026-11-16.
-Fixings used: Cached SARB API reply | series runs to 2026-11-13 | 5 coupons can be calculated | 315 fixing dates needed
-Days with no fixing, and the rate Schedule 1, paragraph 2(a) uses instead:
-  2026-01-29: uses the fixing for 2026-01-28, 6.6030%
-  2026-07-15: uses the fixing for 2026-07-14, 6.8520%
-  2026-07-16: uses the fixing for 2026-07-14, 6.8520%
+Fixings used: Cached SARB API reply | data as of 2026-11-13 | 5 coupons can be calculated | 315 fixing dates needed, 312 published and 3 filled by the fallback
+Exceptions to confirm: days with no fixing in this download, and the rate paragraph 2(a) uses instead.
+  2026-01-29: uses the fixing for 2026-01-28, 6.6030%. Confirm against the issuer's notice.
+  2026-07-15: uses the fixing for 2026-07-14, 6.8520%. Confirm against the issuer's notice.
+  2026-07-16: uses the fixing for 2026-07-14, 6.8520%. Confirm against the issuer's notice.
   2026-05-02 (Saturday): the series has a row, 6.6170%, on a day that is not a business day. Ignored.
 </pre>
 </div>
@@ -9038,6 +9043,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
         <span class="s2">"nominal_rand"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">nominal</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">has_notice</span> <span class="k">else</span> <span class="s2">""</span><span class="p">,</span>
         <span class="s2">"fixings_range_bp"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">spread_of_rates</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="s2">"fallbacks_used"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">substitutions</span><span class="p">),</span>
+        <span class="s2">"status"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="c1"># The rate, compared at however many decimals the notice prints.</span>
     <span class="k">if</span> <span class="n">notice</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rate"</span><span class="p">):</span>
@@ -9051,6 +9057,14 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
         <span class="n">aggregate</span><span class="p">,</span> <span class="n">per_note</span> <span class="o">=</span> <span class="n">interest_cash</span><span class="p">(</span><span class="n">calculated</span><span class="p">,</span> <span class="n">nominal</span><span class="p">,</span> <span class="n">period_days</span><span class="p">)</span>
         <span class="n">row</span><span class="p">[</span><span class="s2">"cash_diff_aggregate_rand"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">aggregate</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">D</span><span class="p">(</span><span class="n">notice</span><span class="p">[</span><span class="s1">'cash'</span><span class="p">])</span><span class="si">:</span><span class="s2">+.2f</span><span class="si">}</span><span class="s2">"</span>
         <span class="n">row</span><span class="p">[</span><span class="s2">"cash_diff_per_note_rand"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">per_note</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">D</span><span class="p">(</span><span class="n">notice</span><span class="p">[</span><span class="s1">'cash'</span><span class="p">])</span><span class="si">:</span><span class="s2">+.2f</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">rate_ok</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"rate_check"</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"match"</span><span class="p">)</span>
+    <span class="n">cash_ok</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"cash_diff_aggregate_rand"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">""</span> <span class="ow">and</span> <span class="n">D</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"cash_diff_aggregate_rand"</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">has_notice</span><span class="p">:</span>
+        <span class="n">row</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"calculated only"</span> <span class="o">+</span> <span class="p">(</span><span class="s2">"; fallback applied, unconfirmed"</span> <span class="k">if</span> <span class="n">substitutions</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">cash_ok</span><span class="p">:</span>
+        <span class="n">row</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"rate and cash tie"</span> <span class="k">if</span> <span class="n">rate_ok</span> <span class="k">else</span> <span class="s2">"cash ties"</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">row</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"rate ties, cash differs"</span> <span class="k">if</span> <span class="n">rate_ok</span> <span class="k">else</span> <span class="s2">"differs"</span>
     <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
     <span class="n">all_substitutions</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">end</span><span class="p">,</span> <span class="o">*</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">substitutions</span><span class="p">]</span>
 
@@ -9058,7 +9072,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <span class="n">every_coupon</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">OUTPUT_DIR</span> <span class="o">/</span> <span class="s2">"every_coupon.csv"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="n">display</span><span class="p">(</span><span class="n">every_coupon</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Days with no ZARONIA in the SARB's series, and the rate Schedule 1, paragraph 2(a) puts in their place:"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Fallback applied (Schedule 1, paragraph 2(a)); each is unconfirmed until the issuer's notice for that coupon is read:"</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">payment</span><span class="p">,</span> <span class="n">missing</span><span class="p">,</span> <span class="n">earlier</span><span class="p">,</span> <span class="n">rate</span> <span class="ow">in</span> <span class="n">all_substitutions</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  coupon of </span><span class="si">{</span><span class="n">payment</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2"> uses the fixing for </span><span class="si">{</span><span class="n">earlier</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">rate</span><span class="si">}</span><span class="s2">%"</span><span class="p">)</span>
 
@@ -9112,6 +9126,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <th>nominal_rand</th>
 <th>fixings_range_bp</th>
 <th>fallbacks_used</th>
+<th>status</th>
 </tr>
 </thead>
 <tbody>
@@ -9129,6 +9144,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <td>756000000</td>
 <td>51.2</td>
 <td>0</td>
+<td>rate and cash tie</td>
 </tr>
 <tr>
 <th>1</th>
@@ -9144,6 +9160,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <td>1796000000</td>
 <td>3.5</td>
 <td>0</td>
+<td>cash ties</td>
 </tr>
 <tr>
 <th>2</th>
@@ -9159,6 +9176,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <td></td>
 <td>26.3</td>
 <td>1</td>
+<td>calculated only; fallback applied, unconfirmed</td>
 </tr>
 <tr>
 <th>3</th>
@@ -9174,6 +9192,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <td>1796000000</td>
 <td>2.7</td>
 <td>0</td>
+<td>rate ties, cash differs</td>
 </tr>
 <tr>
 <th>4</th>
@@ -9189,6 +9208,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <td></td>
 <td>26.3</td>
 <td>2</td>
+<td>calculated only; fallback applied, unconfirmed</td>
 </tr>
 </tbody>
 </table>
@@ -9198,7 +9218,7 @@ Fixings from 2026-02-19 to 2026-05-18; coupon fixed on 2026-05-19
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Days with no ZARONIA in the SARB's series, and the rate Schedule 1, paragraph 2(a) puts in their place:
+<pre>Fallback applied (Schedule 1, paragraph 2(a)); each is unconfirmed until the issuer's notice for that coupon is read:
   coupon of 2026-02-26: 2026-01-29 uses the fixing for 2026-01-28, 6.6030%
   coupon of 2026-08-26: 2026-07-15 uses the fixing for 2026-07-14, 6.8520%
   coupon of 2026-08-26: 2026-07-16 uses the fixing for 2026-07-14, 6.8520%
@@ -9218,9 +9238,9 @@ Cash rounded per calculation amount, as condition 7.2(h) reads: 0 of 3 tie.
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="Would-a-wrong-convention-have-been-caught?">Would a wrong convention have been caught?<a class="anchor-link" href="#Would-a-wrong-convention-have-been-caught?">¶</a></h3><p>A match is only convincing if a plausible mistake would have failed. So this cell recomputes the three coupons whose cash we know, changing one convention at a time: a lookback of four or six business days instead of five, no lookback at all, an observation shift (weighting each fixing by its own calendar days rather than the accrual day's), and a simple average instead of compounding. Each variant is rounded and paid out exactly as before, and its cash is set against the notice.</p>
+<h3 id="Would-a-wrong-convention-have-been-caught?">Would a wrong convention have been caught?<a class="anchor-link" href="#Would-a-wrong-convention-have-been-caught?">¶</a></h3><p>A match is only convincing if a plausible mistake would have failed. So this cell recomputes the three coupons whose cash we know, changing one convention at a time: a lookback of four or six business days instead of five, no lookback at all, an observation shift (weighting each fixing by its own calendar days rather than the accrual day's), a simple average instead of compounding, and the benchmark rounded to three decimals instead of four. Each variant is rounded and paid out exactly as before, and its cash is set against the notice.</p>
 <p>On a flat quarter such as May 2026 the variants differ by a fraction of a basis point, which a three-decimal rate barely sees. The periods with a repo-rate step are where the test has teeth, and the rand amount is far more sensitive than the printed rate.</p>
-<p><strong>What it shows.</strong> Only the contract's convention ties both 2025 amounts to the cent. A lookback one business day out misses them by R10 000 to R29 000 (six days back reaches across the May 2025 rate cut, which is why August 2025 moves most), no lookback by R60 000 or more, and a simple average by six figures. The observation shift is the instructive case: in August 2025 it happens to give the same four-decimal coupon, so that period alone could not tell it apart, but November 2025 misses by about R900. No single period proves the convention; together they pin it down. May 2026 ties under none of them, and none gives 7.6770%, which is the point taken up in section 5.</p>
+<p><strong>What it shows.</strong> Only the contract's convention ties both 2025 amounts to the cent. A lookback one business day out misses them by R10 000 to R29 000 (six days back reaches across the May 2025 rate cut, which is why August 2025 moves most), no lookback by R60 000 or more, and a simple average by six figures. The observation shift is the instructive case: in August 2025 it happens to give the same four-decimal coupon, so that period alone could not tell it apart, but November 2025 misses by about R900. No single period proves the convention; together they pin it down. Rounding the benchmark to three decimals is the one variant that ties May 2026, and it misses both 2025 amounts. So the published figures are consistent with four-decimal rounding in 2025 and three-decimal rounding in May 2026. That is consistent, not confirmed: section 5 takes it up.</p>
 </div>
 </div>
 </div>
@@ -9232,8 +9252,14 @@ Cash rounded per calculation amount, as condition 7.2(h) reads: 0 of 3 tie.
 <div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">coupon_variant</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">lookback</span><span class="o">=</span><span class="n">LOOKBACK</span><span class="p">,</span> <span class="n">observation_shift</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">simple_average</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""The coupon for one period under a changed convention, or None if a fixing it needs is not loaded."""</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">coupon_variant</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">lookback</span><span class="o">=</span><span class="n">LOOKBACK</span><span class="p">,</span> <span class="n">observation_shift</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">simple_average</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                   <span class="n">benchmark_decimals</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The coupon for one period under a changed convention, or None if a fixing it needs is not loaded.</span>
+
+<span class="sd">    With an observation shift, the weights follow the observation dates and the</span>
+<span class="sd">    rate is annualised over the observation period's own days, which can differ</span>
+<span class="sd">    from the interest period's.</span>
+<span class="sd">    """</span>
     <span class="n">day</span><span class="p">,</span> <span class="n">rates</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">start</span><span class="p">,</span> <span class="p">[],</span> <span class="p">[]</span>
     <span class="k">while</span> <span class="n">day</span> <span class="o">&lt;</span> <span class="n">end</span><span class="p">:</span>
         <span class="n">next_day</span> <span class="o">=</span> <span class="n">move_business_days</span><span class="p">(</span><span class="n">day</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -9246,10 +9272,13 @@ Cash rounded per calculation amount, as condition 7.2(h) reads: 0 of 3 tie.
         <span class="n">weights</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">move_business_days</span><span class="p">(</span><span class="n">observed</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">observed</span><span class="p">)</span><span class="o">.</span><span class="n">days</span> <span class="k">if</span> <span class="n">observation_shift</span>
                        <span class="k">else</span> <span class="p">(</span><span class="n">next_day</span> <span class="o">-</span> <span class="n">day</span><span class="p">)</span><span class="o">.</span><span class="n">days</span><span class="p">)</span>
         <span class="n">day</span> <span class="o">=</span> <span class="n">next_day</span>
+    <span class="n">annualise_over</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span> <span class="k">if</span> <span class="n">observation_shift</span> <span class="k">else</span> <span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span><span class="o">.</span><span class="n">days</span>
     <span class="k">if</span> <span class="n">simple_average</span><span class="p">:</span>
         <span class="n">benchmark</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">r</span> <span class="o">*</span> <span class="n">w</span> <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="n">weights</span><span class="p">))</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">benchmark</span> <span class="o">=</span> <span class="n">annualised_benchmark_pct</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span><span class="o">.</span><span class="n">days</span><span class="p">)</span>
+        <span class="n">benchmark</span> <span class="o">=</span> <span class="n">annualised_benchmark_pct</span><span class="p">(</span><span class="n">rates</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">annualise_over</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">benchmark_decimals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">round_half_up</span><span class="p">(</span><span class="n">benchmark</span><span class="p">,</span> <span class="n">D</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">scaleb</span><span class="p">(</span><span class="o">-</span><span class="n">benchmark_decimals</span><span class="p">))</span> <span class="o">+</span> <span class="n">MARGIN_PCT</span>
     <span class="k">return</span> <span class="n">coupon_pct</span><span class="p">(</span><span class="n">benchmark</span><span class="p">)</span>
 
 
@@ -9260,6 +9289,7 @@ Cash rounded per calculation amount, as condition 7.2(h) reads: 0 of 3 tie.
     <span class="s2">"No lookback"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"lookback"</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
     <span class="sa">f</span><span class="s2">"Observation shift, lookback </span><span class="si">{</span><span class="n">LOOKBACK</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"observation_shift"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
     <span class="sa">f</span><span class="s2">"Simple average, lookback </span><span class="si">{</span><span class="n">LOOKBACK</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"simple_average"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+    <span class="s2">"Benchmark rounded to 3 decimals"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"benchmark_decimals"</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>
 <span class="p">}</span>
 <span class="n">with_cash</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">paid_periods</span> <span class="k">if</span> <span class="p">(</span><span class="n">PUBLISHED_NOTICES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cash"</span><span class="p">)]</span>
 <span class="n">variant_rows</span> <span class="o">=</span> <span class="p">[]</span>
@@ -9391,6 +9421,15 @@ Cash rounded per calculation amount, as condition 7.2(h) reads: 0 of 3 tie.
 <td>7.6250</td>
 <td>-227,722.96</td>
 </tr>
+<tr>
+<th>Benchmark rounded to 3 decimals</th>
+<td>8.171</td>
+<td>-571.66</td>
+<td>7.934</td>
+<td>-1,358.07</td>
+<td>7.677</td>
+<td>+0.00</td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -9402,7 +9441,7 @@ Cash rounded per calculation amount, as condition 7.2(h) reads: 0 of 3 tie.
 <pre>The contract row reproduces section 4b.
   2025-08-26: conventions whose cash ties to the cent: Contract: lookback 5, no shift, Observation shift, lookback 5
   2025-11-26: conventions whose cash ties to the cent: Contract: lookback 5, no shift
-  2026-05-26: conventions whose cash ties to the cent: none
+  2026-05-26: conventions whose cash ties to the cent: Benchmark rounded to 3 decimals
 </pre>
 </div>
 </div>
@@ -9500,13 +9539,13 @@ Cash rounded per calculation amount, as condition 7.2(h) reads: 0 of 3 tie.
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="5.-Compare-the-reported-rand-payment-for-May-2026">5. Compare the reported rand payment for May 2026<a class="anchor-link" href="#5.-Compare-the-reported-rand-payment-for-May-2026">¶</a></h2><p>The SENS notice also gives the total interest paid, R33 619 791.45, and that gives a second check on the rate. The notice does not state the nominal, so we take it from <code>inputs/nominal_history.csv</code>: R1.796 billion, from the issuer's tap announcement of 17 September 2025. Section 4b shows that nominal reproducing the November 2025 payment to the cent, and the May amount itself ties to the cent on it at the printed rate, so it is well supported.</p>
 <p>There are two ways to round. One is to work out the interest on the whole R1.796 billion and round once at the end. The other is what condition 7.2(h) of the programme memorandum dated 19 December 2024 (printed page 49) says: work out the interest on one R1 million calculation amount, round that to the cent, half up, and multiply by the number of notes. The pricing supplement disapplies only condition 7.2(e), so 7.2(h) still governs. We try both, at the published 7.677% and at our own four-decimal rate.</p>
-<p>Only one of the four combinations reproduces the notice exactly: the published 7.677%, rounded once on the full nominal. Our rate of 7.6772% gives R875.86 more on the aggregate and R879.55 more per note. Even at 7.677%, rounding per note gives 49 cents less than the notice.</p>
+<p>Only one of the four combinations reproduces the notice exactly: the published 7.677%, rounded once on the full nominal. Our rate of 7.6772% gives R875.86 more than the notice when rounded once on the issue, and R879.55 more across the issue when rounded per R1 million. Even at 7.677%, rounding per R1 million gives 49 cents less across the issue than the notice.</p>
 <p>Read with section 4b, the picture is this.</p>
 <ul>
-<li><strong>Cash rounding.</strong> On these nominals, all three published amounts can be reproduced by rounding once on the whole issue, and none by rounding per R1 million calculation amount as condition 7.2(h) reads. The difference is a fraction of a cent per R1 million note, and R0.49 to R6.40 across the issue. The calculation agent's actual process is not confirmed.</li>
-<li><strong>The rate in May.</strong> In August and November 2025 the amounts tie at our four-decimal rate, as Schedule 1 requires. In May 2026 the amount ties at the rate as printed, 7.677%, and not at our 7.6772%, which gives R875.86 more across the issue, about 49 cents per R1 million note. We cannot tell whether the agent rounded the rate to three decimals or arrived at 7.6770% some other way and printed it without its last zero. None of the alternative conventions in section 4b gives 7.6770%.</li>
+<li><strong>The rate in May.</strong> In August and November 2025 the amounts tie at the four-decimal rate. In May 2026 the amount ties at the rate as printed, 7.677%, which is what rounding the benchmark to three decimals gives; our four-decimal 7.6772% would pay R875.86 more across the issue, about 49 cents per R1 million note. That is consistent with a change in rounding precision, but the notice cannot confirm it, and the calculation agent's worksheet would.</li>
+<li><strong>Cash rounding.</strong> On these nominals all three amounts reproduce when the interest is rounded once on the whole issue. The difference from rounding per R1 million, as condition 7.2(h) reads, is R0.49 to R6.40 across the issue: immaterial, and noted only for completeness.</li>
 </ul>
-<p>We have adjusted nothing to make the figures agree. Both points are open questions for the calculation agent.</p>
+<p>Neither point is material. Both are recorded as they stand, without changing any input to make the figures agree.</p>
 </div>
 </div>
 </div>
